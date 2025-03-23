@@ -3,6 +3,7 @@ import preprocessor,helper
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+
 # TITLE
 st.sidebar.title("Whatsapp Chat Analyser")
 
@@ -16,7 +17,8 @@ if uploaded_file is not None:
 
     # UNIQUE USER & DROPDOWN
     user_list = df['user'].unique().tolist()
-    user_list.remove('group_notification')
+    if 'group_notification' in user_list:
+        user_list.remove('group_notification')
     user_list.sort()
     user_list.insert(0,"Overall")
 
@@ -132,6 +134,18 @@ if uploaded_file is not None:
             st.pyplot(fig)
 
 
+        # SENTIMENT ANALYSIS PLOT
+        st.title("Sentiment Analysis")
+        sentiment_df = helper.predict_sentiment(selected_user, df)  # Get sentiment data
 
+        if not sentiment_df.empty:
+            fig, ax = plt.subplots()
+            ax.bar(sentiment_df['sentiment'], sentiment_df['count'], color=['red', 'gray', 'green'])
+            ax.set_xlabel("Sentiment")
+            ax.set_ylabel("Count")
+            ax.set_title(f"Sentiment Analysis for {selected_user}")
+            st.pyplot(fig)
+        else:
+            st.write("No sentiment data available.")
 
 
