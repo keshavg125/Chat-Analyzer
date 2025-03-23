@@ -3,6 +3,14 @@ from wordcloud import WordCloud
 import pandas as pd
 from collections import Counter
 import emoji
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
+import torch
+
+# Load Model & Tokenizer
+model_name = "ganeshkharad/gk-hinglish-sentiment"
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForSequenceClassification.from_pretrained(model_name)
+
 
 extract = URLExtract()
 
@@ -135,3 +143,25 @@ def activity_heatmap(selected_user,df):
     user_heatmap = df.pivot_table(index='day_name', columns='period', values='message', aggfunc='count').fillna(0)
 
     return user_heatmap
+
+def predict_sentiment(selected_user, df):
+    if selected_user != 'Overall':
+        df = df[df['user'] == selected_user].copy()
+
+    sentiments = []
+
+    for text in df['message']:  # Iterate over messages
+        inputs = tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=512)
+        outputs = model(**inputs)
+        probs = torch.nn.functional.softmax(outputs.logits, dim=-1)
+        sentiment_labels = ["Negative", "Neutral", "Positive"]
+        sentiments.append(sentiment_labels[torch.argmax(probs).item()])
+
+    df['sentiment'] = sentiments  # Add sentiment column
+
+    # Count occurrences of each sentiment and format for plotting
+    sentiment_counts = df['sentiment'].value_counts().reset_index()
+    sentiment_counts.columns = ['sentiment', 'count']
+
+    return sentiment_counts
+
